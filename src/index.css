@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-display: 'Georgia', 'Songti SC', 'Noto Serif SC', 'Times New Roman', serif;
+}
+
+:root {
+  --cream: #f7f1e6;
+  --cream-deep: #efe6d6;
+  --paper: #faf6ef;
+  --paper-deep: #e8dfd0;
+  --ink: #3d2e22;
+  --ink-soft: #7a6554;
+  --accent: #8b6914;
+  --accent-deep: #6e5210;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, #fff9f0 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 100%, #eaddc8 0%, transparent 45%),
+    linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.app-shell {
+  background: transparent;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* gentle breathing on pug head */
+.pug-breathe {
+  transform-origin: 160px 178px;
+  animation: breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.018);
+  }
+}
+
+/* first-person feed hand */
+.feed-approach {
+  animation: approach 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.feed-hold {
+  transform: translateY(-42%) scale(0.92);
+  opacity: 1;
+}
+
+.feed-retreat {
+  animation: retreat 0.65s ease-in forwards;
+}
+
+@keyframes approach {
+  from {
+    transform: translateY(55%) scale(1.15);
+    opacity: 0.2;
+  }
+  to {
+    transform: translateY(-42%) scale(0.92);
+    opacity: 1;
+  }
+}
+
+@keyframes retreat {
+  from {
+    transform: translateY(-42%) scale(0.92);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(60%) scale(1.1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pug-breathe,
+  .feed-approach,
+  .feed-retreat {
+    animation: none !important;
+  }
+  .feed-hold {
+    transform: none;
+  }
+}

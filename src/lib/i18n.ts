@@ -2,7 +2,7 @@ export type Lang = 'zh' | 'en'
 
 const dict = {
   title: { zh: '喂巴哥', en: 'Feed the Pug' },
-  subtitle: { zh: '第一视角 · 轻轻喂一口', en: 'First-person · One gentle bite' },
+  subtitle: { zh: '3D 第一视角 · 轻轻喂一口', en: '3D first-person · One gentle bite' },
   start: { zh: '开始喂食', en: 'Start feeding' },
   pickColor: { zh: '选一只巴哥', en: 'Pick a pug' },
   continue: { zh: '带它回家', en: 'Take it home' },

@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ColorPicker } from './components/ColorPicker'
-import { FeedHand } from './components/FeedHand'
 import { FoodTray } from './components/FoodTray'
 import { Meter } from './components/Meter'
-import { PugFace } from './components/PugFace'
 import { Splash } from './components/Splash'
 import {
   isMuted,
@@ -15,9 +13,8 @@ import {
   unlockAudio,
 } from './lib/audio'
 import { t, type ColorId, type FoodId, type Lang } from './lib/i18n'
-import { COATS, FOODS, type Mood, type Screen } from './lib/types'
-
-type FeedPhase = 'hidden' | 'approach' | 'feed' | 'retreat'
+import { COATS, FOODS, type FeedPhase, type Mood, type Screen } from './lib/types'
+import { GameCanvas } from './scene/GameCanvas'
 
 function moodLabel(lang: Lang, mood: Mood): string {
   switch (mood) {
@@ -45,6 +42,7 @@ export default function App() {
   const [feeding, setFeeding] = useState(false)
   const [activeFood, setActiveFood] = useState<FoodId | null>(null)
   const [feedPhase, setFeedPhase] = useState<FeedPhase>('hidden')
+  const [trauma, setTrauma] = useState(0)
   const timers = useRef<number[]>([])
 
   const coat = COATS.find((c) => c.id === colorId)!
@@ -59,7 +57,6 @@ export default function App() {
     timers.current.push(id)
   }
 
-  // blink loop
   useEffect(() => {
     if (screen !== 'play') return
     let cancelled = false
@@ -83,7 +80,6 @@ export default function App() {
     }
   }, [screen, mood])
 
-  // occasional idle snuffle when longing / idle
   useEffect(() => {
     if (screen !== 'play' || feeding || muted) return
     const id = window.setInterval(() => {
@@ -92,7 +88,6 @@ export default function App() {
     return () => window.clearInterval(id)
   }, [screen, feeding, muted, mood])
 
-  // decay fullness slowly
   useEffect(() => {
     if (screen !== 'play') return
     const id = window.setInterval(() => {
@@ -110,6 +105,21 @@ export default function App() {
       setMood('longing')
     }
   }, [fullness, mood, feeding])
+
+  useEffect(() => {
+    ;(window as unknown as { render_game_to_text?: () => string }).render_game_to_text = () =>
+      JSON.stringify({
+        screen,
+        colorId,
+        mood,
+        fullness: Math.round(fullness),
+        feeding,
+        feedPhase,
+        food: activeFood,
+        muted,
+        lang,
+      })
+  }, [screen, colorId, mood, fullness, feeding, feedPhase, activeFood, muted, lang])
 
   const toggleMute = () => {
     const next = !muted
@@ -129,12 +139,14 @@ export default function App() {
       setMood('longing')
       playSnuffle()
       setFeedPhase('approach')
+      setTrauma((n) => n + 0.15)
 
       const item = FOODS.find((f) => f.id === foodId)!
 
       later(700, () => {
         setFeedPhase('feed')
         setMood('eating')
+        setTrauma((n) => n + 0.35)
         if (foodId === 'water') playLap()
         else playMunch()
       })
@@ -144,6 +156,7 @@ export default function App() {
         setMood('happy')
         playHappy()
         setFullness((f) => Math.min(100, f + item.fill))
+        setTrauma((n) => n + 0.2)
       })
 
       later(700 + 900 + 650, () => {
@@ -160,12 +173,22 @@ export default function App() {
 
   return (
     <div className="app-shell relative min-h-dvh overflow-hidden">
-      {/* top bar */}
-      <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 py-3 sm:px-6">
+      {(screen === 'play' || screen === 'pick') && (
+        <GameCanvas
+          coat={coat}
+          mood={screen === 'pick' ? 'longing' : mood}
+          blinking={screen === 'play' ? blinking : false}
+          foodId={screen === 'play' ? activeFood : null}
+          feedPhase={screen === 'play' ? feedPhase : 'hidden'}
+          trauma={screen === 'play' ? trauma : 0}
+        />
+      )}
+
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 py-3 sm:px-6">
         <button
           type="button"
           onClick={toggleLang}
-          className="rounded-full bg-[var(--paper)]/80 px-3 py-1.5 text-xs font-medium text-[var(--ink)] shadow-sm ring-1 ring-[var(--ink-soft)]/10 backdrop-blur
+          className="pointer-events-auto rounded-full bg-[var(--paper)]/85 px-3 py-1.5 text-xs font-medium text-[var(--ink)] shadow-sm ring-1 ring-[var(--ink-soft)]/10 backdrop-blur
             hover:bg-[var(--cream)]
             focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         >
@@ -177,7 +200,7 @@ export default function App() {
             unlockAudio()
             toggleMute()
           }}
-          className="rounded-full bg-[var(--paper)]/80 px-3 py-1.5 text-xs font-medium text-[var(--ink)] shadow-sm ring-1 ring-[var(--ink-soft)]/10 backdrop-blur
+          className="pointer-events-auto rounded-full bg-[var(--paper)]/85 px-3 py-1.5 text-xs font-medium text-[var(--ink)] shadow-sm ring-1 ring-[var(--ink-soft)]/10 backdrop-blur
             hover:bg-[var(--cream)]
             focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
           aria-pressed={muted}
@@ -212,8 +235,8 @@ export default function App() {
       )}
 
       {screen === 'play' && (
-        <main className="relative flex min-h-dvh flex-col items-center justify-between gap-3 px-3 pb-6 pt-16 sm:gap-4 sm:px-6">
-          <div className="flex w-full max-w-lg flex-col items-center gap-2">
+        <main className="pointer-events-none relative z-20 flex min-h-dvh flex-col items-center justify-between gap-3 px-3 pb-6 pt-16 sm:gap-4 sm:px-6">
+          <div className="pointer-events-auto flex w-full max-w-lg flex-col items-center gap-2">
             <div className="flex w-full items-center justify-between gap-2 px-1">
               <button
                 type="button"
@@ -228,20 +251,19 @@ export default function App() {
               >
                 {t(lang, 'back')}
               </button>
-              <p className="text-sm text-[var(--ink-soft)]">{moodLabel(lang, mood)}</p>
+              <p className="rounded-full bg-[var(--paper)]/75 px-3 py-1 text-sm text-[var(--ink-soft)] backdrop-blur">
+                {moodLabel(lang, mood)}
+              </p>
               <span className="w-12" />
             </div>
-            <Meter lang={lang} value={fullness} />
-          </div>
-
-          <div className="relative flex w-full flex-1 items-center justify-center">
-            <div className="relative w-[min(92vw,420px)]">
-              <PugFace coat={coat} mood={mood} blinking={blinking} />
-              <FeedHand foodId={activeFood} phase={feedPhase} />
+            <div className="w-full rounded-2xl bg-[var(--paper)]/70 px-3 py-2 backdrop-blur">
+              <Meter lang={lang} value={fullness} />
             </div>
           </div>
 
-          <div className="flex w-full flex-col items-center gap-2">
+          <div className="flex-1" />
+
+          <div className="pointer-events-auto flex w-full flex-col items-center gap-2">
             <p className="text-center text-xs text-[var(--ink-soft)]">{t(lang, 'tip')}</p>
             <FoodTray lang={lang} disabled={feeding} onSelect={onFeed} />
           </div>
